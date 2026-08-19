@@ -1,13 +1,10 @@
 """
 02_linkage_index.py
---------------------
-Constructs the bank-NBFI linkage index (L_it) and variants from the
-cleaned panel, runs validation checks, and builds the concentration
-diagnostic (requested by supervisor -- is L_it dominated by a handful
-of very large banks?).
+
+Constructs the bank-NBFI linkage index (L_it) and variants from the cleaned panel, runs validation checks, and builds the concentration
+diagnostic.
 
 INPUT   data/clean/panel_raw.parquet
-
 OUTPUT  data/clean/panel_clean.parquet / .csv
         outputs/linkage_index_log.txt
         outputs/table_lit_distribution.txt
@@ -39,7 +36,6 @@ from importlib import import_module
 config = import_module("00_config")
 
 warnings.filterwarnings("ignore", category=FutureWarning)
-
 plt.rcParams.update({
     "font.family": "serif", "font.size": 11,
     "axes.spines.top": False, "axes.spines.right": False, "figure.dpi": 150,
@@ -54,73 +50,55 @@ def _winsorise(series, lower=config.WINSOR_LOWER, upper=config.WINSOR_HIGH):
 
 
 def _log(log, label, df):
-    entry = f"{label:<55} rows={len(df):>8,}  banks={df['rssd9001'].nunique():>5,}"
-    log.append(entry)
-    print(f"  {entry}")
+    log.append(f"{label:<55} rows={len(df):>8,}  banks={df['rssd9001'].nunique():>5,}")
 
 
 def main():
-    print("\n" + "=" * 65)
-    print("02_linkage_index.py  --  constructing L_it and validating")
-    print("=" * 65)
-
     log = ["LINKAGE INDEX AUDIT LOG", "=" * 65, ""]
 
-    # [0] Load
-    print("\n[0] Loading panel_raw.parquet")
     df = pd.read_parquet(config.F_PANEL_RAW)
     df["rssd9999"] = pd.to_datetime(df["rssd9999"])
     _log(log, "0. Raw clean panel loaded", df)
 
-    # [1] Winsorise components
-    print(f"\n[1] Winsorising components at [{config.WINSOR_LOWER:.0%}, {config.WINSOR_HIGH:.0%}]")
     for col in ["rcfdj458", "rcfd3819", "rcfd3433", "rconj454", "rcfd2170",
                 "rcfd3210", "rcfd1763", "rcfd1764"]:
         if col in df.columns and df[col].notna().sum() > 10:
             lo = df[col].quantile(config.WINSOR_LOWER)
             hi = df[col].quantile(config.WINSOR_HIGH)
             df[col] = df[col].clip(lower=lo, upper=hi)
-            print(f"  {col:<12} [{lo:>14,.0f}, {hi:>14,.0f}]")
 
-    # [2] Build L_it and variants
-    print("\n[2] Building L_it and variants")
     denom = df["rcfd2170"]
     df["L_it"] = (df["rcfd3819"].fillna(0) + df["rcfd3433"].fillna(0)
                   + df["rcfdj458"].fillna(0) + df["rconj454"].fillna(0)) / denom
-    df["L_middle"]     = (df["rcfd3819"].fillna(0) + df["rcfd3433"].fillna(0)) / denom
+    df["L_middle"] = (df["rcfd3819"].fillna(0) + df["rcfd3433"].fillna(0)) / denom
     df["L_guarantees"] = df["rcfd3819"].fillna(0) / denom
     df["L_securities"] = df["rcfd3433"].fillna(0) / denom
-    df["L_lines"]      = df["rcfdj458"].fillna(0) / denom
+    df["L_lines"] = df["rcfdj458"].fillna(0) / denom
     df["L_ndfi_loans"] = df["rconj454"].fillna(0) / denom
     for col in ["L_it", "L_middle", "L_guarantees", "L_securities", "L_lines", "L_ndfi_loans"]:
         df[col] = df[col].clip(lower=0)
 
-    print("[3] Winsorising L_it and variants at 99th percentile")
     for col in ["L_it", "L_middle", "L_guarantees", "L_securities", "L_lines", "L_ndfi_loans"]:
         hi = df[col].quantile(config.WINSOR_HIGH)
-        n_clip = (df[col] > hi).sum()
         df[col] = df[col].clip(upper=hi)
-        print(f"  {col:<15} 99th={hi:.6f}  clipped {n_clip:,} obs")
 
     log.append("L_it = (rcfd3819 + rcfd3433 + rcfdj458 + rconj454) / rcfd2170")
     log.append("rcfdj458, rconj454 = 0 for 2005-2009 (item didn't exist pre-2010)")
 
-    # [4] Controls and outcome variables
-    print("\n[4] Constructing controls and outcome variables")
     df["capital_ratio"] = _winsorise(df["rcfd3210"] / df["rcfd2170"])
-    df["log_assets"]    = np.log(df["rcfd2170"])
-    df["year"]          = df["rssd9999"].dt.year
-    df["quarter"]       = df["rssd9999"].dt.quarter
-    df["year_quarter"]  = df["year"].astype(str) + "Q" + df["quarter"].astype(str)
-    df["post_2010"]     = (df["year"] >= 2010).astype(int)
+    df["log_assets"] = np.log(df["rcfd2170"])
+    df["year"] = df["rssd9999"].dt.year
+    df["quarter"] = df["rssd9999"].dt.quarter
+    df["year_quarter"] = df["year"].astype(str) + "Q" + df["quarter"].astype(str)
+    df["post_2010"] = (df["year"] >= 2010).astype(int)
     df = df.sort_values(["rssd9001", "rssd9999"])
+
     ci = df["rcfd1763"].fillna(0) + df["rcfd1764"].fillna(0)
     ci_lag = ci.groupby(df["rssd9001"]).shift(1)
     df["ci_loan_growth"] = ((ci - ci_lag) / ci_lag).clip(lower=-1, upper=3)
     df["has_sec_lending"] = (df["rcfd3433"] > 0).astype(int)
 
-    # [5] credit_growth_4q -- calendar-based self-merge (robust to panel gaps)
-    print("[5] Constructing credit_growth_4q (calendar-merge, h=4)")
+    # Calendar-based self-merge => robust to panel #
     df["ci_level"] = ci
     df["rssd9999_fwd"] = df["rssd9999"] + pd.DateOffset(months=9)
     df["rssd9999_fwd"] = df["rssd9999_fwd"] + pd.offsets.QuarterEnd(0)
@@ -135,12 +113,9 @@ def main():
     lo4, hi4 = df["credit_growth_4q"].quantile([0.01, 0.99])
     df["credit_growth_4q"] = df["credit_growth_4q"].clip(lower=lo4, upper=hi4)
     n_valid = df["credit_growth_4q"].notna().sum()
-    print(f"  Valid obs: {n_valid:,} of {len(df):,}")
     log.append(f"credit_growth_4q: {n_valid:,} valid obs of {len(df):,}, "
                f"winsorised [{lo4:.4f}, {hi4:.4f}]")
 
-    # [6] Save clean panel
-    print("\n[6] Saving clean panel")
     keep = [
         "rssd9001", "rssd9999", "rssd9017", "year", "quarter", "year_quarter",
         "post_2010", "L_it", "L_middle", "L_guarantees", "L_securities", "L_lines", "L_ndfi_loans",
@@ -154,11 +129,7 @@ def main():
     _log(log, "Final clean panel with L_it", df)
     df.to_parquet(config.F_PANEL_CLEAN, index=False)
     df.to_csv(config.F_PANEL_CSV, index=False)
-    print(f"  Saved -> {config.F_PANEL_CLEAN}")
-    print(f"  Saved -> {config.F_PANEL_CSV}")
 
-    # [7] Validation exhibits
-    print("\n[7] Validation exhibits")
     val_lines = ["L_it VALIDATION SUMMARY", "=" * 60]
 
     ts = (df.groupby("rssd9999")
@@ -224,12 +195,8 @@ def main():
 
     desc = df["L_it"].describe(percentiles=[.01, .05, .25, .50, .75, .95, .99])
     val_lines += ["", "CHECK 3: L_it distribution (full sample)", desc.to_string()]
-    val_text = "\n".join(val_lines)
-    (config.OUTPUT / "table_lit_distribution.txt").write_text(val_text, encoding="utf-8")
-    print(f"  Saved -> {config.OUTPUT / 'table_lit_distribution.txt'}")
+    (config.OUTPUT / "table_lit_distribution.txt").write_text("\n".join(val_lines), encoding="utf-8")
 
-    # [8] Concentration diagnostic
-    print("\n[8] Concentration diagnostic")
     conc_lines = [
         "CONCENTRATION DIAGNOSTIC",
         "Checks whether NBFI-linkage exposure is dominated by a small",
@@ -246,7 +213,7 @@ def main():
             continue
         shares.append({
             "q": q,
-            "top5":  g["numerator"].head(5).sum() / total,
+            "top5": g["numerator"].head(5).sum() / total,
             "top10": g["numerator"].head(10).sum() / total,
             "top20": g["numerator"].head(20).sum() / total,
             "n_banks": g["rssd9001"].nunique(),
@@ -265,6 +232,7 @@ def main():
         f"(uniform benchmark = {1/sh.n_banks.mean():.4f})",
         "",
     ]
+
     bank_avg2 = df.groupby("rssd9001").agg(mean_Lit=("L_it", "mean"),
                                             mean_assets=("rcfd2170", "mean")).reset_index()
     corr = bank_avg2[["mean_Lit", "mean_assets"]].corr().iloc[0, 1]
@@ -295,22 +263,10 @@ def main():
     fig.tight_layout()
     fig.savefig(config.OUTPUT / "fig_concentration_lorenz.png", bbox_inches="tight")
     plt.close()
-    conc_text = "\n".join(conc_lines)
-    (config.OUTPUT / "table_concentration.txt").write_text(conc_text, encoding="utf-8")
-    print(f"  Saved -> {config.OUTPUT / 'table_concentration.txt'}")
-    print("\n" + conc_text)
 
-    log_text = "\n".join(log)
-    (config.OUTPUT / "linkage_index_log.txt").write_text(log_text, encoding="utf-8")
-    print(f"\n  Log -> {config.OUTPUT / 'linkage_index_log.txt'}")
+    (config.OUTPUT / "table_concentration.txt").write_text("\n".join(conc_lines), encoding="utf-8")
+    (config.OUTPUT / "linkage_index_log.txt").write_text("\n".join(log), encoding="utf-8")
 
 
 if __name__ == "__main__":
     main()
-
-# ============================================================
-# APPENDIX
-# ============================================================
-# *1  0.3 is an arbitrary but standard rule-of-thumb cutoff for "not a
-#     strong correlation" in this kind of diagnostic -- not derived from
-#     anything, just a reasonable line to draw for the write-up.

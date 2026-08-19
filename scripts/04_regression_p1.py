@@ -1,97 +1,37 @@
 """
 04_regression_p1.py
---------------------
-PURPOSE
-    Estimate the P1 monetary policy transmission local projections
-    (Jorda, 2005): does bank-NBFI linkage intensity (L_it) alter the
-    strength of transmission of monetary policy shocks to bank credit
-    growth, at horizons h = 0..8 quarters?
 
-SPECIFICATION
-    Outcome (h-quarter cumulative log change, relative to quarter t-1
-    -- the standard Jorda local-projections construction):
-        Delta_h y_{i,t} = log(CI_{i,t+h}) - log(CI_{i,t-1})
-    Built via calendar-based merges (robust to panel gaps, e.g. the
-    documented 2005Q3 WRDS extraction gap), not positional shifts.
-    Because the outcome is already cumulative from t-1, the
-    interaction coefficient at h=8 IS the "cumulative eight-quarter
-    effect" the dissertation plan asks for -- no further summation
-    needed. Peak effect = max|delta_h| across h; time-to-peak = the
-    h at which that max occurs.
+Proposition 1 local projections (Jorda, 2005): does bank-NBFI linkage intensity (L_it) alter the strength of monetary policy transmission to
+bank credit growth, at horizons h = 0..8 quarters?
 
-    Model A (PRIMARY) -- bank + quarter fixed effects:
-        Delta_h y_{i,t} = alpha_i + gamma_t + delta_h (mp_shock_t x L_it)
-                          + phi_h L_it + theta_h' X_it + u_{i,t+h}
-        mp_shock_t is absorbed by quarter FE (it is constant across
-        banks within a quarter) -- so beta_h (average transmission)
-        is NOT separately estimable here. delta_h (the interaction) IS
-        estimable, because L_it varies across banks within a quarter.
-        This is the tighter identification: quarter FE absorb *any*
-        common shock that quarter, not just mp_shock, so delta_h is
-        not contaminated by omitted aggregate confounds. This directly
-        answers the research question (does linkage alter
-        transmission?) even though it cannot report an average
-        transmission effect on its own.
+Outcome (h-quarter cumulative log change from t-1): Delta_h y_{i,t} = log(CI_{i,t+h}) - log(CI_{i,t-1})
+Built via calendar-based merges, robust to panel gaps. Because the outcome is already cumulative from t-1, delta_h at h=8 IS the
+cumulative eight-quarter effect. Peak effect = max|delta_h| across h; time-to-peak = the h at which that max occurs.
 
-    Model B (ROBUSTNESS) -- bank FE only, no quarter FE:
-        Delta_h y_{i,t} = alpha_i + beta_h mp_shock_t + delta_h (mp_shock_t x L_it)
-                          + phi_h L_it + psi_h' Z_t + theta_h' X_it + u_{i,t+h}
-        Z_t = nfci, term_spread (aggregate controls, since no quarter FE
-        to absorb them). Both beta_h and delta_h are estimable here,
-        matching the dissertation plan's literal spec, at the cost of
-        weaker identification (aggregate confounds not captured by
-        Z_t contaminate both coefficients).
+Model A (PRIMARY) | bank + quarter FE:
+    Delta_h y_{i,t} = alpha_i + gamma_t + delta_h (mp_shock_t x L_it) + phi_h L_it + theta_h' X_it + u_{i,t+h}
+    mp_shock_t is absorbed by quarter FE; only delta_h is estimable.
 
-    Both models: two-way clustered SEs (bank, quarter) via
-    linearmodels.PanelOLS.
+Model B (ROBUSTNESS) | bank FE only:
+    Delta_h y_{i,t} = alpha_i + beta_h mp_shock_t + delta_h (mp_shock_t x L_it) + phi_h L_it + psi_h' Z_t + theta_h' X_it + u_{i,t+h}
+    Z_t = nfci, term_spread. Both beta_h and delta_h estimable.
 
-    Model C (ROBUSTNESS) -- bank + quarter FE, LAGGED linkage:
-        Same as Model A but interacts mp_shock_t with L_{i,t-1}
-        instead of contemporaneous L_it. Avoids simultaneity: the
-        shock itself could move L_it within the same quarter,
-        contaminating the interaction. Standard practice in the
-        bank-lending-channel literature (Kashyap-Stein 1995,
-        Kishan-Opiela 2000).
-
-    Model D (ROBUSTNESS) -- bank + quarter FE, TIME-AVERAGED linkage:
-        Same as Model A but interacts mp_shock_t with each bank's
-        full-sample average L_it (a time-invariant "linkage type")
-        instead of the noisy quarterly flow measure. L_it has a large
-        mass at exactly zero and moves in/out of securities lending
-        quarter to quarter; using the noisy contemporaneous value can
-        mechanically attenuate the interaction toward zero even if a
-        real effect exists. The main effect of this variable is
-        absorbed by entity (bank) FE since it is time-invariant; only
-        the interaction with mp_shock_t is estimable, which is exactly
-        the parameter of interest.
-
-    Model E (EXTENSION) -- bank + quarter FE, stress-dependent triple
-        interaction: does the transmission-heterogeneity effect
-        (mp_shock x L_it) get amplified during high-financial-stress
-        quarters (NFCI in the top historical tercile)? Motivated
-        directly by the dissertation plan's Brunnermeier-Pedersen
-        funding-stress discussion (already central to Proposition 2)
-        and by Models A-C's unconditional null: if the effect is real
-        but concentrated in stress periods, an unconditional average
-        against near-zero calm-period effects would look null even
-        though a genuine state-dependent effect exists.
+Model C (ROBUSTNESS) | bank + quarter FE, L_{i,t-1} instead of L_it.
+Model D (ROBUSTNESS) | bank + quarter FE, time-averaged L_it ("linkage type").
+Model E (EXTENSION)  | bank + quarter FE, adds shock x L_it x high_stress
+                         (high_stress = NFCI top historical tercile).
+Model F (EXTENSION)  | bank FE only, estimated separately within
+                         Low/Medium/High linkage-type tercile subsamples.
 
 INPUT   data/clean/panel_macro.parquet
-
-OUTPUT  outputs/table_p1_local_projections.csv   (all horizons, all 4 models)
-        outputs/table_p1_local_projections.txt   (formatted, write-up ready)
-        outputs/fig_p1_impulse_response.png      (two panels: FE comparison
-                                                   A-vs-B; linkage-variable
-                                                   comparison A-vs-C-vs-D)
+OUTPUT  outputs/table_p1_local_projections.csv / .txt
+        outputs/table_p1_stress_dependent.csv / .txt
+        outputs/table_p1_linkage_groups.csv / .txt
+        outputs/fig_p1_impulse_response.png
+        outputs/fig_p1_stress_dependent.png
+        outputs/fig_p1_linkage_groups.png
         outputs/p1_regression_log.txt
-
-NOTE ON FREQUENCY MISMATCH (supervisor comment, carried from 03_macro_merge.py)
-    mp_shock_t is a quarterly SUM of monthly-aggregated FOMC surprises.
-    This regression identifies the effect of the quarterly-cumulated
-    shock, not of an individual FOMC announcement -- state this
-    explicitly in the methodology write-up, not just in code comments.
 """
-
 import sys
 import warnings
 import numpy as np
@@ -108,7 +48,6 @@ from importlib import import_module
 config = import_module("00_config")
 
 warnings.filterwarnings("ignore")
-
 plt.rcParams.update({
     "font.family": "serif", "font.size": 11,
     "axes.spines.top": False, "axes.spines.right": False, "figure.dpi": 150,
@@ -116,44 +55,31 @@ plt.rcParams.update({
 NAVY, BLUE, RED, GRAY = "#003366", "#0066cc", "#cc0000", "#666666"
 GREEN = "#006633"
 
-HORIZONS   = list(range(0, 9))          # h = 0..8 quarters
-CONTROLS   = ["capital_ratio", "log_assets", "ci_loan_growth"]
+HORIZONS = list(range(0, 9))
+CONTROLS = ["capital_ratio", "log_assets", "ci_loan_growth"]
 WINSOR_LO, WINSOR_HI = 0.01, 0.99
 INTERACT_VAR = "shock_x_L"
 
-
 def _build_horizon_outcomes(df):
-    """
-    Build Delta_h y_{i,t} = log(CI_{i,t+h}) - log(CI_{i,t-1}) for
-    h = 0..8 via calendar-based merges.
-
-    Pattern (for both the t-1 base and the t+h forward level): shift
-    the MAIN row's own date to the target quarter, then merge against
-    an unshifted copy of (bank, date, ci_level) on that target date.
-    Shifting the source copy instead of the main row's target date
-    (an earlier version of this function did that) silently computes
-    values from h quarters in the PAST rather than the future --
-    caught via y_h1 having exactly zero variance in testing (h=0 is
-    shift-symmetric so it happened to be unaffected).
-    """
+    """Delta_h y_{i,t} = log(CI_{i,t+h}) - log(CI_{i,t-1}), h = 0..8, via
+    calendar-based merges. Shift the MAIN row's own date to the target
+    quarter and merge against an unshifted copy -- shifting the source
+    copy instead silently reverses the direction (see README)."""
     df = df.sort_values(["rssd9001", "rssd9999"]).reset_index(drop=True)
     src = df[["rssd9001", "rssd9999", "ci_level"]].copy()
 
-    # -- lag-1 base level (t-1) --
     df["rssd9999_target"] = df["rssd9999"] - pd.DateOffset(months=3)
     df["rssd9999_target"] = df["rssd9999_target"] + pd.offsets.QuarterEnd(0)
     lag_src = src.rename(columns={"rssd9999": "rssd9999_target", "ci_level": "ci_lag1"})
     df = df.merge(lag_src, on=["rssd9001", "rssd9999_target"], how="left")
     df = df.drop(columns=["rssd9999_target"])
 
-    # -- forward levels (t+h) for each horizon --
     for h in HORIZONS:
         df["rssd9999_target"] = df["rssd9999"] + pd.DateOffset(months=3 * h)
         df["rssd9999_target"] = df["rssd9999_target"] + pd.offsets.QuarterEnd(0)
         fwd_src = src.rename(columns={"rssd9999": "rssd9999_target", "ci_level": f"ci_fwd{h}"})
         df = df.merge(fwd_src, on=["rssd9001", "rssd9999_target"], how="left")
         df = df.drop(columns=["rssd9999_target"])
-
         with np.errstate(divide="ignore", invalid="ignore"):
             raw = np.log(df[f"ci_fwd{h}"] / df["ci_lag1"])
         raw = raw.replace([np.inf, -np.inf], np.nan)
@@ -163,22 +89,13 @@ def _build_horizon_outcomes(df):
             df[f"y_h{h}"] = raw.clip(lower=lo, upper=hi)
         else:
             df[f"y_h{h}"] = raw
-
     return df
 
-
 def _drop_singletons(est: pd.DataFrame, drop_time_singletons: bool = True) -> pd.DataFrame:
-    """
-    Drop singleton entities (bank appears only once) and, if
-    drop_time_singletons, singleton time periods (quarter has only one
-    bank) before fitting an FE model. A singleton is perfectly absorbed
-    by its own fixed effect -- it contributes zero identifying
-    information but corrupts the residual degrees-of-freedom count
-    linearmodels uses internally (causes a ZeroDivisionError in fit()
-    otherwise). Iterates because dropping one singleton can
-    occasionally create another. Only entity singletons matter when
-    there is no time-effects term (Model B).
-    """
+    """Drop singleton entities/time periods before fitting an FE model --
+    a singleton is perfectly absorbed by its own FE and corrupts the
+    residual-df count linearmodels uses internally (ZeroDivisionError
+    otherwise). Iterates since dropping one can create another."""
     prev_len = -1
     while len(est) != prev_len:
         prev_len = len(est)
@@ -191,16 +108,10 @@ def _drop_singletons(est: pd.DataFrame, drop_time_singletons: bool = True) -> pd
             est = est[est["rssd9999"].isin(good_qs)]
     return est
 
-
 def _fit_bankquarter_fe(df, h, L_col, model_label):
-    """
-    Shared estimator for the bank+quarter FE specification (Model A's
-    identification strategy), parameterized by which linkage variable
-    is used for the main effect and the shock interaction. Used by
-    Model A (contemporaneous L_it), Model C (lagged L_it, avoids
-    simultaneity with the shock), and Model D (bank-level time-average
-    "linkage type", avoids quarter-to-quarter measurement noise).
-    """
+    """Shared bank+quarter FE estimator, parameterized by which linkage
+    variable enters the main effect and shock interaction (L_it for
+    Model A, L_it_lag1 for C, L_it_bankmean for D)."""
     cols = [f"y_h{h}", L_col, "mp_shock"] + CONTROLS
     est = df[["rssd9001", "rssd9999"] + cols].dropna().copy()
     est["shock_x_L"] = est["mp_shock"] * est[L_col]
@@ -220,14 +131,6 @@ def _fit_bankquarter_fe(df, h, L_col, model_label):
         needs_fallback = pd.isna(two_way_se)
         fallback_reason = "NaN"
         if not needs_fallback:
-            # Two-way cluster-robust covariance (Cameron-Gelbach-Miller) can
-            # be numerically degenerate WITHOUT returning NaN -- it can yield
-            # an artificially deflated SE instead, which looks like a real
-            # (and spuriously significant) result unless checked directly.
-            # Compare against the one-way (bank) clustered SE as a sanity
-            # check: a two-way SE that is a small fraction of the one-way SE
-            # is a red flag for this pathology, not a genuine, more-precise
-            # estimate.
             res_oneway_check = mod.fit(cov_type="clustered", cluster_entity=True, cluster_time=False)
             one_way_se = res_oneway_check.std_errors.get(INTERACT_VAR, np.nan)
             if not pd.isna(one_way_se) and one_way_se > 0 and two_way_se < 0.2 * one_way_se:
@@ -236,9 +139,6 @@ def _fit_bankquarter_fe(df, h, L_col, model_label):
                                    f"one-way SE={one_way_se:.4f} -- likely degenerate "
                                    f"covariance, not genuine precision)")
         if needs_fallback:
-            print(f"    NOTE h={h}: two-way clustered SE is {fallback_reason} for {INTERACT_VAR} ({model_label}) "
-                  f"(n_bank_clusters={n_clusters_bank}, n_time_clusters={n_clusters_time}) "
-                  f"-- falling back to one-way (bank) clustering")
             res = mod.fit(cov_type="clustered", cluster_entity=True, cluster_time=False)
             res._cov_note = (f"FALLBACK: one-way (bank) clustered SE used -- two-way "
                              f"clustered covariance was {fallback_reason} at this horizon "
@@ -247,12 +147,12 @@ def _fit_bankquarter_fe(df, h, L_col, model_label):
             res._cov_note = None
         return res, len(est), n_banks, n_singleton_dropped
     except Exception as e:
-        print(f"    {model_label} FAILED at h={h}: {e}")
+        print(f"{model_label} FAILED at h={h}: {e}")
         return None, len(est), n_banks, n_singleton_dropped
 
 
 def _fit_model_A(df, h):
-    """Bank + quarter FE, contemporaneous L_it. PRIMARY specification."""
+    """Bank + quarter FE, contemporaneous L_it. Primary specification."""
     return _fit_bankquarter_fe(df, h, "L_it", "Model A")
 
 
@@ -283,9 +183,6 @@ def _fit_model_B(df, h):
                                    f"one-way SE={one_way_se:.4f} -- likely degenerate "
                                    f"covariance, not genuine precision)")
         if needs_fallback:
-            print(f"    NOTE h={h}: two-way clustered SE is {fallback_reason} for {INTERACT_VAR} (Model B) "
-                  f"(n_bank_clusters={n_clusters_bank}, n_time_clusters={n_clusters_time}) "
-                  f"-- falling back to one-way (bank) clustering")
             res = mod.fit(cov_type="clustered", cluster_entity=True, cluster_time=False)
             res._cov_note = (f"FALLBACK: one-way (bank) clustered SE used -- two-way "
                              f"clustered covariance was {fallback_reason} at this horizon "
@@ -294,36 +191,20 @@ def _fit_model_B(df, h):
             res._cov_note = None
         return res, len(est), n_banks
     except Exception as e:
-        print(f"    Model B FAILED at h={h}: {e}")
+        print(f"Model B FAILED at h={h}: {e}")
         return None, len(est), n_banks
 
-
 def _fit_model_C(df, h):
-    """Bank + quarter FE, L_{i,t-1} (lagged linkage). Avoids simultaneity:
-    the shock itself could move contemporaneous L_it within the same
-    quarter; interacting with the pre-shock value is standard practice
-    in the bank-lending-channel literature (Kashyap-Stein 1995,
-    Kishan-Opiela 2000)."""
     return _fit_bankquarter_fe(df, h, "L_it_lag1", "Model C")
 
-
 def _fit_model_D(df, h):
-    """Bank + quarter FE, time-averaged L_it ("linkage type"). Avoids
-    attenuation from quarter-to-quarter measurement noise in the flow
-    measure -- L_it has a large mass at exactly zero and jumps in/out
-    of securities lending, which mechanically attenuates an interaction
-    coefficient toward zero if used contemporaneously."""
     return _fit_bankquarter_fe(df, h, "L_it_bankmean", "Model D")
 
-
 def _build_alt_linkage_vars(df):
-    """
-    Build L_it_lag1 (calendar-based one-quarter lag, same corrected
-    merge pattern as the horizon outcomes -- shift the MAIN row's
-    target date, not the source copy) and L_it_bankmean (bank-level
-    time-average, time-invariant so its main effect is absorbed by
-    entity FE but the interaction with mp_shock_t remains estimable).
-    """
+    """L_it_lag1 (calendar-based one-quarter lag, same merge pattern as
+    the horizon outcomes) and L_it_bankmean (bank-level time average --
+    time-invariant, so its main effect is absorbed by entity FE and only
+    the interaction with mp_shock_t is estimable)."""
     df = df.sort_values(["rssd9001", "rssd9999"]).reset_index(drop=True)
     src = df[["rssd9001", "rssd9999", "L_it"]].copy()
     df["rssd9999_target"] = df["rssd9999"] - pd.DateOffset(months=3)
@@ -331,45 +212,16 @@ def _build_alt_linkage_vars(df):
     lag_src = src.rename(columns={"rssd9999": "rssd9999_target", "L_it": "L_it_lag1"})
     df = df.merge(lag_src, on=["rssd9001", "rssd9999_target"], how="left")
     df = df.drop(columns=["rssd9999_target"])
-
     df["L_it_bankmean"] = df.groupby("rssd9001")["L_it"].transform("mean")
     return df
 
-
 def _build_stress_indicator(df, threshold_pct=2/3):
-    """
-    Flag high-stress quarters as NFCI in the top tercile (default) of
-    its HISTORICAL distribution. Computed on the unique quarterly NFCI
-    series (each quarter counted once), not the bank-quarter panel --
-    otherwise quarters with more reporting banks would be over-weighted
-    in the threshold calculation.
-    """
     unique_q = df[["rssd9999", "nfci"]].drop_duplicates(subset=["rssd9999"])
     threshold = unique_q["nfci"].quantile(threshold_pct)
     df["high_stress"] = (df["nfci"] >= threshold).astype(int)
     return df, threshold
 
-
 def _fit_model_E(df, h):
-    """
-    Stress-dependent triple interaction: bank + quarter FE, testing
-    whether the shock x L_it transmission-heterogeneity effect is
-    amplified during high-financial-stress quarters (NFCI top tercile).
-    Estimable terms under quarter FE (mp_shock and high_stress alone,
-    and their product, are constant within a quarter and absorbed):
-        L_it                        (main effect)
-        L_it x high_stress          (does the linkage-outcome relationship
-                                      itself differ by stress regime?)
-        mp_shock x L_it             (baseline transmission-heterogeneity
-                                      effect, i.e. during CALM quarters)
-        mp_shock x L_it x high_stress  (the STRESS DIFFERENTIAL -- the
-                                      parameter of interest: is transmission
-                                      heterogeneity amplified in stress?)
-    Total effect during high-stress quarters = coef(shock_x_L) +
-    coef(shock_x_L_x_stress); its SE requires the joint covariance of
-    the two coefficients (computed in main() via the fitted result's
-    covariance matrix, not just added in quadrature independently).
-    """
     cols = [f"y_h{h}", "L_it", "mp_shock", "high_stress"] + CONTROLS
     est = df[["rssd9001", "rssd9999"] + cols].dropna().copy()
     est["shock_x_L"] = est["mp_shock"] * est["L_it"]
@@ -388,9 +240,6 @@ def _fit_model_E(df, h):
         n_clusters_bank = est.index.get_level_values(0).nunique()
         n_clusters_time = est.index.get_level_values(1).nunique()
         if pd.isna(res.std_errors.get("shock_x_L_x_stress", np.nan)):
-            print(f"    NOTE h={h}: two-way clustered SE is NaN for shock_x_L_x_stress (Model E) "
-                  f"(n_bank_clusters={n_clusters_bank}, n_time_clusters={n_clusters_time}) "
-                  f"-- falling back to one-way (bank) clustering")
             res = mod.fit(cov_type="clustered", cluster_entity=True, cluster_time=False)
             res._cov_note = (f"FALLBACK: one-way (bank) clustered SE used -- two-way "
                              f"clustered covariance was degenerate (NaN) at this horizon "
@@ -399,23 +248,10 @@ def _fit_model_E(df, h):
             res._cov_note = None
         return res, len(est), n_banks, n_singleton_dropped
     except Exception as e:
-        print(f"    Model E FAILED at h={h}: {e}")
+        print(f"Model E FAILED at h={h}: {e}")
         return None, len(est), n_banks, n_singleton_dropped
 
-
 def _build_linkage_terciles(df):
-    """
-    Split banks into Low/Medium/High linkage-TYPE groups based on
-    terciles of L_it_bankmean (each bank's full-sample average L_it),
-    computed on the DISTINCT bank-level distribution -- each bank
-    counted once, not weighted by how many quarters it appears in the
-    panel. Complements Model D's finding that the persistent bank
-    characteristic (not the noisy quarterly flow) is what matters:
-    here we test directly whether high-linkage banks are fundamentally
-    different institutions, by comparing separately-estimated
-    transmission coefficients across groups rather than an interaction
-    term.
-    """
     bank_level = df[["rssd9001", "L_it_bankmean"]].drop_duplicates(subset=["rssd9001"])
     q33, q67 = bank_level["L_it_bankmean"].quantile([1/3, 2/3])
 
@@ -430,20 +266,7 @@ def _build_linkage_terciles(df):
     df["linkage_group"] = df["rssd9001"].map(bank_group_map)
     return df, q33, q67
 
-
 def _fit_model_F(df, h, group):
-    """
-    Bank FE only (no quarter FE -- mirrors Model B's identification,
-    since we need mp_shock's own coefficient here, not just an
-    interaction), estimated SEPARATELY within one linkage-type tercile
-    group's subsample. beta_h here is the group-specific average
-    transmission effect; comparing it across Low/Medium/High groups
-    directly tests whether highly-interconnected banks transmit policy
-    differently, complementing the interaction-based tests in Models
-    A-E. Standard sorted-portfolio approach in the bank-lending-channel
-    literature (Kashyap-Stein 1995 sort banks into liquid/illiquid
-    terciles the same way).
-    """
     sub = df[df["linkage_group"] == group]
     cols = [f"y_h{h}", "mp_shock", "nfci", "term_spread"] + CONTROLS
     est = sub[["rssd9001", "rssd9999"] + cols].dropna().copy()
@@ -460,9 +283,6 @@ def _fit_model_F(df, h, group):
         n_clusters_bank = est.index.get_level_values(0).nunique()
         n_clusters_time = est.index.get_level_values(1).nunique()
         if pd.isna(res.std_errors.get("mp_shock", np.nan)):
-            print(f"    NOTE h={h} group={group}: two-way clustered SE is NaN for mp_shock "
-                  f"(n_bank_clusters={n_clusters_bank}, n_time_clusters={n_clusters_time}) "
-                  f"-- falling back to one-way (bank) clustering")
             res = mod.fit(cov_type="clustered", cluster_entity=True, cluster_time=False)
             res._cov_note = (f"FALLBACK: one-way (bank) clustered SE used, group={group}, h={h} "
                              f"(n_bank_clusters={n_clusters_bank}, n_time_clusters={n_clusters_time})")
@@ -470,9 +290,8 @@ def _fit_model_F(df, h, group):
             res._cov_note = None
         return res, len(est), n_banks, n_singleton_dropped
     except Exception as e:
-        print(f"    Model F ({group}) FAILED at h={h}: {e}")
+        print(f"Model F ({group}) FAILED at h={h}: {e}")
         return None, len(est), n_banks, n_singleton_dropped
-
 
 def _stars(p):
     if p < 0.01: return "***"
@@ -480,12 +299,7 @@ def _stars(p):
     if p < 0.10: return "*"
     return ""
 
-
 def main():
-    print("\n" + "=" * 65)
-    print("04_regression_p1.py  --  P1 monetary policy transmission (local projections)")
-    print("=" * 65)
-
     log = [
         "P1 LOCAL PROJECTIONS AUDIT LOG", "=" * 65,
         f"Horizons: h = {HORIZONS}",
@@ -498,8 +312,6 @@ def main():
         "",
     ]
 
-    # Load and build horizon outcomes #
-    print("\n[1] Loading panel and constructing horizon outcomes")
     df = pd.read_parquet(config.F_PANEL_MACRO)
     df["rssd9999"] = pd.to_datetime(df["rssd9999"])
     df = _build_horizon_outcomes(df)
@@ -507,27 +319,21 @@ def main():
     df, stress_threshold = _build_stress_indicator(df)
     n_stress_q = df.loc[df["high_stress"] == 1, "rssd9999"].nunique()
     n_total_q = df["rssd9999"].nunique()
-    print(f"  High-stress threshold (NFCI top tercile): {stress_threshold:.4f}")
-    print(f"  High-stress quarters: {n_stress_q} of {n_total_q}")
     log.append(f"High-stress threshold (NFCI >= top-tercile value {stress_threshold:.4f}): "
                f"{n_stress_q} of {n_total_q} quarters flagged")
+
     df, q33, q67 = _build_linkage_terciles(df)
     group_bank_counts = df.drop_duplicates(subset=["rssd9001"])["linkage_group"].value_counts()
-    print(f"  Linkage-type terciles (L_it_bankmean): Low <= {q33:.4f} < Medium <= {q67:.4f} < High")
-    print(f"  Bank counts by group: {group_bank_counts.to_dict()}")
     log.append(f"Linkage-type terciles: Low<={q33:.4f}, Medium<={q67:.4f}, High>{q67:.4f}; "
                f"bank counts: {group_bank_counts.to_dict()}")
+
     n_lag_valid = df["L_it_lag1"].notna().sum()
-    print(f"  L_it_lag1: {n_lag_valid:,} valid obs (first quarter per bank has no lag)")
     log.append(f"L_it_lag1 valid obs: {n_lag_valid:,} of {len(df):,}")
-    print(f"  Panel: {len(df):,} rows, {df['rssd9001'].nunique()} banks")
+
     for h in HORIZONS:
         n_valid = df[f"y_h{h}"].notna().sum()
-        print(f"  h={h}: {n_valid:,} valid outcome obs")
         log.append(f"  h={h}: {n_valid:,} valid outcome observations (of {len(df):,})")
 
-    # Estimate all five models at every horizon #
-    print("\n[2] Estimating Models A-E across horizons")
     results_A, results_B, results_C, results_D, results_E = {}, {}, {}, {}, {}
     for h in HORIZONS:
         res_A, n_A, banks_A, dropped_A = _fit_model_A(df, h)
@@ -552,27 +358,7 @@ def main():
                            ("Model D", res_D), ("Model E", res_E)]:
             if res is not None and getattr(res, "_cov_note", None):
                 log.append(f"  h={h} {label}: {res._cov_note}")
-        line = f"  h={h}"
-        for label, res, n in [("A", res_A, n_A), ("B", res_B, n_B), ("C", res_C, n_C), ("D", res_D, n_D)]:
-            if res is not None:
-                coef = res.params[INTERACT_VAR]
-                pval = res.pvalues[INTERACT_VAR]
-                line += f"  {label}: delta_h={coef:+.4f}{_stars(pval)} (N={n:,})"
-            else:
-                line += f"  {label}: failed"
-        print(line)
-        if res_E is not None:
-            calm = res_E.params[INTERACT_VAR]
-            calm_p = res_E.pvalues[INTERACT_VAR]
-            stress_diff = res_E.params["shock_x_L_x_stress"]
-            stress_diff_p = res_E.pvalues["shock_x_L_x_stress"]
-            print(f"       E: calm={calm:+.4f}{_stars(calm_p)}  "
-                  f"stress_differential={stress_diff:+.4f}{_stars(stress_diff_p)} (N={n_E:,})")
-        else:
-            print("       E: failed")
 
-    # Build results table #
-    print("\n[3] Building results table")
     rows = []
     for h in HORIZONS:
         for model_name, results in [("A", results_A), ("B", results_B), ("C", results_C), ("D", results_D)]:
@@ -583,10 +369,10 @@ def main():
                             "n": r["n"], "banks": r["banks"]})
                 continue
             res = r["res"]
-            coef  = res.params[INTERACT_VAR]
-            se    = res.std_errors[INTERACT_VAR]
-            pval  = res.pvalues[INTERACT_VAR]
-            ci    = res.conf_int().loc[INTERACT_VAR]
+            coef = res.params[INTERACT_VAR]
+            se = res.std_errors[INTERACT_VAR]
+            pval = res.pvalues[INTERACT_VAR]
+            ci = res.conf_int().loc[INTERACT_VAR]
             rows.append({
                 "model": model_name, "h": h, "coef": coef, "se": se, "pval": pval,
                 "ci_lo": ci["lower"], "ci_hi": ci["upper"],
@@ -595,10 +381,7 @@ def main():
             })
     df_csv = pd.DataFrame(rows)
     df_csv.to_csv(config.OUTPUT / "table_p1_local_projections.csv", index=False, float_format="%.6f")
-    print(f"  CSV saved -> {config.OUTPUT / 'table_p1_local_projections.csv'}")
 
-    # Formatted text table #
-    print("\n[4] Writing formatted text table")
     txt_lines = [
         "TABLE: P1 Local Projections -- delta_h coefficient on (shock x linkage)",
         "Outcome: Delta_h y_it = log(CI_{i,t+h}) - log(CI_{i,t-1})",
@@ -621,12 +404,10 @@ def main():
                 s = "failed"
             line += f"{s:>18}" if results is results_A else f"{s:>16}"
         txt_lines.append(line)
-
     txt_lines += ["-" * 74, "", "N by horizon (Model A / B / C / D):"]
     for h in HORIZONS:
         ns = [str(results[h]["n"]) for results in [results_A, results_B, results_C, results_D]]
         txt_lines.append(f"  h={h}: " + " / ".join(ns))
-
     txt_lines += [
         "", "-" * 74, "",
         "\u2020 Two-way (bank, quarter) clustered SE was degenerate (NaN) at this horizon;",
@@ -651,13 +432,8 @@ def main():
         "Because the outcome is cumulative from t-1, delta_h at h=8 IS the cumulative",
         "  eight-quarter effect (no further summation needed).",
     ]
-    txt = "\n".join(txt_lines)
-    (config.OUTPUT / "table_p1_local_projections.txt").write_text(txt, encoding="utf-8")
-    print(f"  TXT saved -> {config.OUTPUT / 'table_p1_local_projections.txt'}")
-    print("\n" + txt)
+    (config.OUTPUT / "table_p1_local_projections.txt").write_text("\n".join(txt_lines), encoding="utf-8")
 
-    # Peak effect / time-to-peak / cumulative effect summary #
-    print("\n[5] Peak effect and cumulative-effect summary (all models)")
     for label, results in [("A (primary)", results_A), ("B", results_B),
                            ("C (lagged L)", results_C), ("D (bank-mean L)", results_D)]:
         coefs = {h: results[h]["res"].params[INTERACT_VAR]
@@ -673,12 +449,8 @@ def main():
             f"  Cumulative 8-quarter effect: delta_8={cum_8:+.4f}" if not np.isnan(cum_8)
                 else "  Cumulative 8-quarter effect: NOT AVAILABLE (insufficient N at h=8)",
         ]
-        for line in summary_lines:
-            print(line)
-            log.append(line)
+        log.extend(summary_lines)
 
-    # Model E: stress-dependent results (dedicated table) #
-    print("\n[5b] Model E: stress-dependent triple interaction results")
     e_rows = []
     e_lines = [
         "TABLE: P1 Extension -- Stress-Dependent Triple Interaction (Model E)",
@@ -698,8 +470,6 @@ def main():
         stress_diff = res.params["shock_x_L_x_stress"]
         stress_diff_p = res.pvalues["shock_x_L_x_stress"]
         total = calm + stress_diff
-        # Joint SE via the fitted covariance matrix (NOT independent addition-in-quadrature,
-        # since the two coefficients are correlated in finite samples)
         try:
             cov_matrix = res.cov
             var_total = (cov_matrix.loc[INTERACT_VAR, INTERACT_VAR]
@@ -735,14 +505,9 @@ def main():
         "  masks a real effect concentrated in stress periods, averaged against a",
         "  near-zero effect in calm periods.",
     ]
-    e_text = "\n".join(e_lines)
-    (config.OUTPUT / "table_p1_stress_dependent.txt").write_text(e_text, encoding="utf-8")
+    (config.OUTPUT / "table_p1_stress_dependent.txt").write_text("\n".join(e_lines), encoding="utf-8")
     pd.DataFrame(e_rows).to_csv(config.OUTPUT / "table_p1_stress_dependent.csv", index=False, float_format="%.6f")
-    print(f"  Saved -> {config.OUTPUT / 'table_p1_stress_dependent.txt'}")
-    print("\n" + e_text)
 
-    # Impulse response figure #
-    print("\n[6] Generating impulse response figure")
     fig, axes = plt.subplots(1, 2, figsize=(14, 5.5))
 
     def _plot_panel(ax, specs, title):
@@ -776,15 +541,11 @@ def main():
          (results_C, RED, "C: lagged L_{i,t-1}"),
          (results_D, "#006633", "D: bank-mean L (\"type\")")],
         "Linkage-variable comparison\n(bank+quarter FE throughout)")
-
     fig.suptitle("P1: Does linkage intensity alter monetary policy transmission?", y=1.03)
     fig.tight_layout()
     fig.savefig(config.OUTPUT / "fig_p1_impulse_response.png", bbox_inches="tight")
     plt.close()
-    print(f"  Saved -> {config.OUTPUT / 'fig_p1_impulse_response.png'}")
 
-    # ── [7] Model E figure: calm vs stress-differential vs total ────────
-    print("\n[7] Generating stress-dependent (Model E) figure")
     hs_e, calm_vals, stress_diff_vals, total_vals, total_ci_lo, total_ci_hi = [], [], [], [], [], []
     for h in HORIZONS:
         res = results_E[h]["res"]
@@ -820,12 +581,9 @@ def main():
     fig.tight_layout()
     fig.savefig(config.OUTPUT / "fig_p1_stress_dependent.png", bbox_inches="tight")
     plt.close()
-    print(f"  Saved -> {config.OUTPUT / 'fig_p1_stress_dependent.png'}")
 
-    # ══════════════════════════════════════════════════════════════════
-    # [8] Model F: linkage-type tercile group comparison
-    # ══════════════════════════════════════════════════════════════════
-    print("\n[8] Model F: linkage-type tercile group comparison")
+    # Model F: linkage-type tercile group comparison #
+
     groups = ["Low", "Medium", "High"]
     results_F = {g: {} for g in groups}
     for h in HORIZONS:
@@ -836,14 +594,6 @@ def main():
                 log.append(f"  h={h} group={g}: dropped {dropped_g} singleton obs before Model F")
             if res is not None and getattr(res, "_cov_note", None):
                 log.append(f"  h={h} group={g}: {res._cov_note}")
-        line = f"  h={h}"
-        for g in groups:
-            r = results_F[g][h]["res"]
-            if r is not None:
-                line += f"  {g}: beta_h={r.params['mp_shock']:+.4f}{_stars(r.pvalues['mp_shock'])} (N={results_F[g][h]['n']:,})"
-            else:
-                line += f"  {g}: failed"
-        print(line)
 
     f_rows = []
     f_lines = [
@@ -868,9 +618,7 @@ def main():
                 row += f"{'failed':>16}"
         if "High" in coefs and "Low" in coefs:
             diff = coefs["High"][0] - coefs["Low"][0]
-            # Low and High are non-overlapping, independent bank subsamples --
-            # variances simply add (no covariance term needed, unlike Model E's
-            # within-sample joint interaction terms)
+            # Non-overlapping, independent bank subsamples: variances simply add, no covariance term needed.
             diff_se = np.sqrt(coefs["High"][1] ** 2 + coefs["Low"][1] ** 2)
             diff_t = diff / diff_se if diff_se > 0 else np.nan
             diff_p = 2 * (1 - stats.norm.cdf(np.abs(diff_t))) if not np.isnan(diff_t) else np.nan
@@ -893,11 +641,8 @@ def main():
         "  between separately-estimated coefficients across sorted groups, the standard",
         "  approach in the bank-lending-channel literature (Kashyap-Stein 1995).",
     ]
-    f_text = "\n".join(f_lines)
-    (config.OUTPUT / "table_p1_linkage_groups.txt").write_text(f_text, encoding="utf-8")
+    (config.OUTPUT / "table_p1_linkage_groups.txt").write_text("\n".join(f_lines), encoding="utf-8")
     pd.DataFrame(f_rows).to_csv(config.OUTPUT / "table_p1_linkage_groups.csv", index=False, float_format="%.6f")
-    print(f"  Saved -> {config.OUTPUT / 'table_p1_linkage_groups.txt'}")
-    print("\n" + f_text)
 
     fig, ax = plt.subplots(figsize=(9, 5.5))
     group_colors = {"Low": GREEN, "Medium": BLUE, "High": RED}
@@ -926,13 +671,8 @@ def main():
     fig.tight_layout()
     fig.savefig(config.OUTPUT / "fig_p1_linkage_groups.png", bbox_inches="tight")
     plt.close()
-    print(f"  Saved -> {config.OUTPUT / 'fig_p1_linkage_groups.png'}")
 
-    # Save log #
-    log_text = "\n".join(log)
-    (config.OUTPUT / "p1_regression_log.txt").write_text(log_text, encoding="utf-8")
-    print(f"\n  Log -> {config.OUTPUT / 'p1_regression_log.txt'}")
-    print("\n  Done. Next: python 05_regression_p2.py")
+    (config.OUTPUT / "p1_regression_log.txt").write_text("\n".join(log), encoding="utf-8")
 
 
 if __name__ == "__main__":
