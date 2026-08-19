@@ -1,0 +1,29 @@
+LINKAGE ORTHOGONALITY DIAGNOSTIC
+=================================================================
+
+PANEL-LEVEL (pooled bank-quarter) correlations with L_it:
+  L_it vs log_assets       +0.1635
+  L_it vs capital_ratio    -0.0629
+  L_it vs ci_loan_growth   +0.0191
+  L_it vs asset_growth     +0.0106
+  L_it vs has_sec_lending  +0.5125
+
+BANK-LEVEL (cross-sectional mean) correlations with L_it:
+  L_it vs log_assets       +0.1891
+  L_it vs capital_ratio    -0.0557
+  L_it vs ci_loan_growth   -0.0065
+  L_it vs asset_growth     +0.0296
+  L_it vs has_sec_lending  +0.6023
+
+Bank-level OLS: mean L_it ~ log_assets + capital_ratio + ci_loan_growth + asset_growth + has_sec_lending
+  N banks: 173
+  R^2 = 0.3289
+  1 - R^2 = 0.6711  <- share of L_it's cross-bank variation
+  NOT explained by these standard observables (*1)
+  Coefficients (plain OLS, not for inference -- see note *1):
+    const           -0.0471
+    log_assets      +0.0051
+    capital_ratio   -0.0691
+    ci_loan_growth  +0.0138
+    asset_growth    -0.1298
+    has_sec_lending +0.4824

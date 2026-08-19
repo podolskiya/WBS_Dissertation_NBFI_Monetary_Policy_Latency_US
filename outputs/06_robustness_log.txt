@@ -1,0 +1,21 @@
+06 ROBUSTNESS CHECKS AUDIT LOG
+=================================================================
+
+
+[1] P2 LAGGED LINKAGE ROBUSTNESS
+  [Lagged L (t-1)] N=5,703 rows, 162 banks
+
+[2] P2 COMPONENT DECOMPOSITION
+  [L_middle] N=5,791 rows, 162 banks
+  [L_guarantees] N=5,791 rows, 162 banks
+  [L_securities] N=5,791 rows, 162 banks
+  [L_lines] N=5,791 rows, 162 banks
+
+[3] P2 LARGE-BANK SPLIT (top 10 banks by mean rcfd2170)
+  [Large-bank EXCLUDED] N=5,163 rows, 152 banks
+  [Large-bank ONLY] N=628 rows, 10 banks
+
+[4] P1 ZLB/COVID EXCLUSION ROBUSTNESS
+  ZLB rows excluded: 3,332 of 7,027
+
+Runtime: 1049.7 seconds
