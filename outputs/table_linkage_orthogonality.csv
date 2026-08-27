@@ -1,0 +1,6 @@
+,L_it,log_assets,capital_ratio,ci_loan_growth,asset_growth
+L_it,1.0000,0.1635,-0.0629,0.0191,0.0106
+log_assets,0.1635,1.0000,-0.1350,0.0181,0.0470
+capital_ratio,-0.0629,-0.1350,1.0000,-0.0049,-0.0893
+ci_loan_growth,0.0191,0.0181,-0.0049,1.0000,0.1368
+asset_growth,0.0106,0.0470,-0.0893,0.1368,1.0000

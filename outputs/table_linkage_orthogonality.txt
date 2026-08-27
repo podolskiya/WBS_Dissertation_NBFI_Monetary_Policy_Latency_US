@@ -1,0 +1,25 @@
+TABLE: L_it vs. Observable Bank Characteristics
+Answers: how much of L_it is captured by standard, already-observable
+bank characteristics, vs. genuinely orthogonal to them?
+============================================================
+
+Characteristic         Panel-level    Bank-level
+------------------------------------------------
+Log assets (size)           0.1635        0.1891
+Capital ratio              -0.0629       -0.0557
+C&I loan growth             0.0191       -0.0065
+Asset growth                0.0106        0.0296
+------------------------------------------------
+
+Bank-level R^2 (mean L_it ~ size + capital ratio + loan growth + asset growth): 0.0719
+  -> 0.9281 of cross-bank L_it variation is NOT explained by these four
+     conventional prudential/scale characteristics jointly -- i.e. genuinely
+     orthogonal to them, not just weakly correlated with each individually.
+
+Notes: Panel-level = pooled bank-quarter observations (does linkage
+  move with these characteristics quarter to quarter?). Bank-level =
+  cross-section of each bank's full-sample mean (are persistently
+  high-linkage banks a particular type of bank?). (*1)
+
+[Construction check, excluded from the table/R^2 above -- see note *2]
+Has sec. lending            0.5125        0.6023

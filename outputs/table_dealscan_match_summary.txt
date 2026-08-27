@@ -1,0 +1,14 @@
+TABLE: DealScan Lender Matching Summary
+============================================================
+
+Total DealScan lender_parent entities checked: 3,065
+  High confidence (score >= 90):        40 lenders
+  Needs review (score 75-89):            338 lenders
+  Low confidence (score 60-74):          1,199 lenders
+  No candidate above 60:              1,791 lenders (expected -- most DealScan lenders are not in your 194-bank sample)
+
+NEXT STEP: open table_dealscan_match_candidates.csv, fill in
+'confirmed_rssd9001' for every row you accept as a genuine match,
+and send the reviewed file back. Remember: a name match here does
+NOT yet account for merger timing (see script docstring) -- that is
+a separate follow-up step once we know the confirmed match set.

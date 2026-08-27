@@ -1,0 +1,27 @@
+TABLE: P1 Extension -- Linkage-Type Tercile Group Comparison
+Groups by L_it_bankmean: Low<=0.0076, Medium<=0.0349, High>0.0349
+Bank counts: {'Medium': 64, 'Low': 64, 'High': 64}
+Bank FE only (no quarter FE -- need mp_shock's own coefficient, not just an
+interaction), estimated SEPARATELY within each group's subsample.
+
+h                Low          Medium            High   High-Low diff   p-value
+------------------------------------------------------------------------------
+0            +0.0200         -0.0308         -0.0314         -0.0514    0.3091
+1          -0.1221**         -0.0339         -0.0456         +0.0766    0.3617
+2            +0.0148         +0.0199         -0.0348         -0.0495    0.7083
+3            -0.0799         +0.0502         -0.0509         +0.0290    0.8311
+4            -0.0357         -0.0231         -0.1545         -0.1188    0.4656
+5            -0.0625         +0.0135         -0.0551         +0.0074    0.9686
+6            -0.1505         +0.0875         +0.0215         +0.1721    0.4706
+7            -0.0254         +0.1413         -0.0490         -0.0236    0.9368
+8            -0.0123         +0.2389         +0.0289         +0.0412    0.9099
+------------------------------------------------------------------------------
+
+Notes: beta_h = coefficient on mp_shock, estimated separately within each
+  linkage-type tercile's subsample (bank FE only, two-way clustered SE).
+'High-Low diff' = High-group beta_h minus Low-group beta_h; independent
+  (non-overlapping) subsamples, so its SE is simply sqrt(se_High^2 + se_Low^2).
+*** p<0.01  ** p<0.05  * p<0.10 (two-sided, standard normal).
+Complements Model D (bank-mean L_it as an interaction): here the comparison is
+  between separately-estimated coefficients across sorted groups, the standard
+  approach in the bank-lending-channel literature (Kashyap-Stein 1995).

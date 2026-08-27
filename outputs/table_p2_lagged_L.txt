@@ -1,0 +1,14 @@
+TABLE: P2 Robustness -- Lagged Linkage (L_{i,t-1})
+Tests whether the contemporaneous-L_it tail-risk result survives
+using the pre-outcome-window linkage value (avoids simultaneity,
+though P2 already has a natural lead-lag structure).
+
+N = 5,703 bank-quarters | 162 banks
+
+Quantile          coef        SE   p-value    
+----------------------------------------------
+tau=0.10      -0.1882    0.0407    0.0000  ***
+tau=0.25      -0.0900    0.0295    0.0022  ***
+tau=0.50      -0.0193    0.0215    0.3702  
+tau=0.75       0.0388    0.0229    0.0900  *
+tau=0.90       0.1371    0.0757    0.0702  *
