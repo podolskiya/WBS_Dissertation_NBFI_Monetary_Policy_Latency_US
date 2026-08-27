@@ -1,8 +1,0 @@
-TABLE: BDC-Side Concentration Diagnostic
-Mirrors the bank-side concentration check in 02_linkage_index.py --
-is BDC-sector total assets dominated by a handful of large funds?
-============================================================
-
-Average share of aggregate BDC-sector total assets held by:
-  Top 5 BDCs (of ~42):  51.1%  (range 43.7-64.5%)
-  Top 10 BDCs:              67.8%  (range 60.3-81.4%)

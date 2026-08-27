@@ -1,8 +1,0 @@
-LINKAGE INDEX AUDIT LOG
-=================================================================
-
-0. Raw clean panel loaded                               rows=   7,027  banks=  192
-L_it = (rcfd3819 + rcfd3433 + rcfdj458 + rconj454) / rcfd2170
-rcfdj458, rconj454 = 0 for 2005-2009 (item didn't exist pre-2010)
-credit_growth_4q: 5,916 valid obs of 7,027, winsorised [-0.7281, 1.0166]
-Final clean panel with L_it                             rows=   7,027  banks=  192

@@ -1,5 +1,0 @@
-DEALSCAN LENDER MATCHING AUDIT LOG
-=================================================================
-
-DealScan lenders: 3,065 distinct entities
-Panel banks: 192 distinct RSSD IDs

@@ -10,7 +10,7 @@ Rows dropped from full panel (7,027): 1,236
 
 HYPOTHESIS TEST RESULTS
 -----------------------------------------------------------------
-beta_L_it(tau=0.10) = -0.189675  SE=0.043202  p=0.0000***
+beta_L_it(tau=0.10) = -0.189676  SE=0.043208  p=0.0000***
 beta_L_it(tau=0.50) = -0.017888
 beta_L_it(tau=0.90) = +0.136029
 
@@ -23,4 +23,4 @@ H0(REDUNDANCY): beta_L_it(tau=0.10) p=0.0000  -> REJECT at 10% level
   tau=0.50: -0.0076 log pts
   tau=0.90: +0.0581 log pts
 
-Runtime: 295.3 seconds
+Runtime: 140.3 seconds
