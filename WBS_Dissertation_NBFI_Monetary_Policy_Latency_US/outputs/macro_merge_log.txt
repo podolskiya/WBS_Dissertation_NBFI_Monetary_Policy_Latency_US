@@ -1,0 +1,34 @@
+MACRO MERGE AUDIT LOG
+=================================================================
+
+Combined raw frame shape: (17172, 4)
+
+NOTE ON FREQUENCY MISMATCH: (*1)
+
+Shock series merged: 2 quarters with no shock data (outside JK sample window)
+
+Panel merge: 7,027 rows in, 7,027 rows out (unchanged)
+
+Macro variable coverage in merged panel:
+  nfci         100.0%  median=-0.5050  [-0.7951, 2.7969]
+  nfci_credit  100.0%  median=-0.0422  [-0.4128, 2.4708]
+  dgs10        100.0%  median= 2.8784  [0.6506, 5.0727]
+  fedfunds     100.0%  median= 0.3967  [0.0600, 5.3300]
+  term_spread  100.0%  median= 1.5470  [-1.3943, 3.5845]
+  nfci_change  100.0%  median= 0.0031  [-1.0573, 1.8477]
+  mp_shock      98.1%  median=-0.0023  [-0.3401, 0.0983]
+  cbi_shock     98.1%  median= 0.0000  [-0.0793, 0.1018]
+  mp_shock_median  98.1%  median=-0.0146  [-0.3613, 0.1747]
+  cbi_shock_median  98.1%  median= 0.0075  [-0.1207, 0.1054]
+
+Correlations with L_it:
+  corr(L_it, nfci        ) = -0.0324
+  corr(L_it, nfci_credit ) = -0.0252
+  corr(L_it, dgs10       ) =  0.0280
+  corr(L_it, fedfunds    ) =  0.0476
+  corr(L_it, term_spread ) = -0.0476
+  corr(L_it, nfci_change ) =  0.0070
+  corr(L_it, mp_shock    ) =  0.0005
+  corr(L_it, cbi_shock   ) =  0.0068
+  corr(L_it, mp_shock_median) =  0.0038
+  corr(L_it, cbi_shock_median) = -0.0080

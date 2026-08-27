@@ -1,0 +1,41 @@
+DATA CLEANING AUDIT LOG
+=================================================================
+Step                                                             rows  banks
+-----------------------------------------------------------------
+  rcfd1.csv: dropped 7,817 exact-duplicate rows (WRDS export artifact)
+  rcfd2.csv: dropped 7,788 exact-duplicate rows (WRDS export artifact)
+  Dropped 103 (bank,quarter) keys with conflicting (non-identical) duplicate rows in either file -- likely amended/restated filings; no submission-date field available to pick the correct version.
+2. Merged rcfd1 + rcfd2 (inner join on bank,quarter)         rows= 510,130  banks=9,670
+rconj454: 138 conflicting keys set to NaN
+rconj454 merged: 348,031 of 510,130 rows matched
+3. Trim to analysis window (2004-10-01 to 2024-09-30)        rows= 510,130  banks=9,670
+
+Filing type distribution (pre-filter):
+  Type  41:    390,654 rows
+  Type  51:    112,027 rows
+  Type  31:      7,449 rows
+5. Keep FFIEC 031 filers only                                rows=   7,449  banks=  203
+6. Assets >= $300m (300,000k)                                rows=   7,076  banks=  192
+7. Drop missing rcfd2170 (removed 0)                         rows=   7,076  banks=  192
+  Merger quarters flagged and dropped: 49
+8. Drop merger quarters                                      rows=   7,027  banks=  192
+  NOTE: 2005Q3 shows 70 banks vs 108/115 in surrounding quarters. Q3 2005 was the first quarter Call Reports were processed through the newly-implemented CDR electronic filing system, and Hurricane Katrina struck during the same reporting quarter -- the agencies formally acknowledged resulting filing delays (FDIC/OCC/Fed joint filing FIL-94-2005, Sept 21 2005). Left as a natural panel gap, not patched.
+  rcfd3820: 661 NaN -> 0 (RC-L zero-fill)
+  rcfdj457: 2,288 NaN -> 0 (RC-L zero-fill)
+  rcfdj458: 2,288 NaN -> 0 (RC-L zero-fill)
+  rcfdj459: 2,288 NaN -> 0 (RC-L zero-fill)
+  rconj454: 2,288 NaN -> 0 (RC-L zero-fill)
+10. Final clean panel                                        rows=   7,027  banks=  192
+
+-----------------------------------------------------------------
+FINAL VARIABLE COVERAGE:
+
+  rcfd3819             100.0%  (7,027 / 7,027)
+  rcfd3433             100.0%  (7,027 / 7,027)
+  rcfdj458             100.0%  (7,027 / 7,027)
+  rconj454             100.0%  (7,027 / 7,027)
+  rcfd2170             100.0%  (7,027 / 7,027)
+  rcfd3210             100.0%  (7,027 / 7,027)
+  rcfd1763             100.0%  (7,027 / 7,027)
+  rcfd1764             100.0%  (7,027 / 7,027)
+  rcfdj454               0.0%  (0 / 7,027)

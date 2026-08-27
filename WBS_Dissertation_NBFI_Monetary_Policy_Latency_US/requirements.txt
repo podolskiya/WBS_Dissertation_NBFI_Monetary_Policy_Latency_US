@@ -1,0 +1,11 @@
+pandas
+numpy
+pyarrow
+matplotlib
+scipy
+statsmodels
+linearmodels
+requests
+rapidfuzz
+openpyxl
+seaborn

@@ -1,0 +1,18 @@
+TABLE: P1 Robustness -- Shock-Rotation Sensitivity
+Model A (primary spec), mp_shock (poor man's rotation, MP_pm)
+versus mp_shock_median (median rotation, MP_median). Same
+specification, same sample, only the shock series differs.
+
+h          Poor mans       p     Median rot.       p
+------------------------------------------------------
+0            -0.0537   0.345         -0.0085   0.853
+1            +0.1129   0.495         +0.0736   0.491
+2            -0.1598   0.399         -0.1857   0.200
+3            -0.0371   0.620         -0.1693   0.160
+4            -0.0070   0.960         -0.0958   0.348
+5            +0.0205   0.659      +0.1083***   0.005
+6            +0.1165   0.640       +0.2881**   0.032
+7            +0.2255   0.401         +0.3750   0.100
+8            +0.1591   0.577         +0.2775   0.357
+
+Sign agreement: 9 of 9 horizons (both series have valid estimates).

@@ -1,0 +1,17 @@
+TABLE: Nested Model Comparison (H0_REDUNDANCY test)
+Does L_it add predictive power for downside credit risk beyond
+conventional prudential indicators?
+
+Quantile       PsR2(A)     PsR2(B)       Delta   beta_L_it        SE   p-value      
+------------------------------------------------------------------------------
+  tau=0.10        0.0754      0.1098      0.0344     -0.1897    0.0432    0.0000  *** 
+  tau=0.25        0.0672      0.0764      0.0093     -0.0897    0.0317    0.0046  *** 
+  tau=0.50        0.0464      0.0469      0.0005     -0.0179    0.0233    0.4421      
+  tau=0.75        0.0435      0.0457      0.0022      0.0390    0.0223    0.0799  *   
+  tau=0.90        0.0683      0.0814      0.0131      0.1360    0.0749    0.0694  *   
+------------------------------------------------------------------------------
+
+Notes: Pseudo-R2 is the Koenker-Machado goodness-of-fit statistic.
+Model A: nfci + capital_ratio + log_assets + ci_loan_growth (no L_it).
+Model B: Model A + L_it.
+A positive Delta Pseudo-R2 at tau=0.10 with significant beta_L_it rejects H0(REDUNDANCY).

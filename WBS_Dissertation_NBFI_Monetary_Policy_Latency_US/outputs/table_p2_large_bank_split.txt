@@ -1,0 +1,14 @@
+TABLE: P2 Robustness -- Large-Bank Split (top 10 banks by mean assets)
+Does the tail-risk result survive excluding the banks that dominate
+aggregate NBFI-linkage dollar exposure (see 02's concentration diagnostic)?
+
+Excluding top 10: N=5,163, 152 banks
+Only top 10:      N=628, 10 banks
+
+Quantile     Excluded coef       p       Only coef       p
+----------------------------------------------------------
+tau=0.10         -0.1713***   0.005         -0.2113   0.181
+tau=0.25          -0.0792**   0.048         -0.1405   0.217
+tau=0.50            -0.0026   0.931         -0.0596   0.594
+tau=0.75            +0.0445   0.175         -0.0521   0.712
+tau=0.90            +0.1563   0.125         -0.0014   0.994
