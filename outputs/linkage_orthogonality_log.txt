@@ -17,15 +17,16 @@ Bank-level OLS: mean L_it ~ log_assets + capital_ratio + ci_loan_growth + asset_
   N banks: 173
   R^2 = 0.0719
   1 - R^2 = 0.9281  <- share of L_it's cross-bank variation
-  NOT explained by these standard observables (*1)
-  Coefficients (plain OLS, not for inference -- see note *1):
+  NOT explained by these standard observables (descriptive only, see README)
+  Coefficients (plain OLS, not for inference -- see README):
     const           -0.3961
     log_assets      +0.0313
     capital_ratio   -0.2620
     ci_loan_growth  -0.0810
     asset_growth    -0.0545
+  R^2 (four conventional characteristics, excl. has_sec_lending) = 0.0719
 
-[CONSTRUCTION CHECK -- not an independent characteristic, excluded from R^2 above]
+[CONSTRUCTION CHECK - not an independent characteristic, excluded from R^2 above]
 L_it vs has_sec_lending (= rcfd3433 > 0, one of L_it's own numerator terms):
   panel-level = +0.5125   bank-level = +0.6023
   Strong correlation expected by construction; confirms internal consistency

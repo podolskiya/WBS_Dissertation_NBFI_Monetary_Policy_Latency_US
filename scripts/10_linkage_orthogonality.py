@@ -80,6 +80,13 @@ def main():
         coef_lines.append(f"    {var:<16}{beta[i+1]:+.4f}")
     log.extend(coef_lines)
 
+    CONVENTIONAL = ["log_assets", "capital_ratio", "ci_loan_growth", "asset_growth"]
+    X4 = np.column_stack([np.ones(len(reg_data)), reg_data[CONVENTIONAL].values])
+    beta4, _, _, _ = np.linalg.lstsq(X4, y, rcond=None)
+    r2_four = 1 - np.sum((y - X4 @ beta4) ** 2) / ss_tot
+    print(f"  R^2 (four conventional characteristics, excl. has_sec_lending) = {r2_four:.4f}")
+    log.append(f"  R^2 (four conventional characteristics, excl. has_sec_lending) = {r2_four:.4f}")
+    
     # Construction check, rather than folded into the R^2/correlation table above (see README) #
 
     sec_vars = ["L_it", SEC_LENDING_VAR]
